@@ -31,6 +31,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const templateListView = document.getElementById('template-list-view');
     const templateContentView = document.getElementById('template-content-view');
     const backToListBtn = document.getElementById('back-to-list-btn');
+    const templateTitle = document.getElementById('template-title');
+    const templateTitleInput = document.getElementById('template-title-input');
+    const templateContentInput = document.getElementById('template-content-input');
+    const templateEditActions = document.getElementById('template-edit-actions');
 
     let activeNoteElement = null;
     let originalText = '';
@@ -38,6 +42,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let templates = [];
     let selectedTemplateId = null;
     let editingTemplateId = null;
+    let isEditingTemplate = false;
+    let isAddingTemplate = false;
+    let currentTemplate = null;
 
     // --- Data Functions ---
     async function getFeedbackNotes() {
@@ -302,76 +309,79 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.textContent = t.name;
             btn.onclick = () => {
                 selectedTemplateId = t.id;
+                isAddingTemplate = false;
                 showTemplateContent(t.id);
             };
-            // Edit icon
-            const editBtn = document.createElement('button');
-            editBtn.className = 'edit-template-btn';
-            editBtn.innerHTML = '✏️';
-            editBtn.onclick = (e) => {
-                e.stopPropagation();
-                startRenameTemplate(t.id, t.name);
-            };
-            btn.appendChild(editBtn);
             templateListContainer.appendChild(btn);
         });
     }
 
     function showTemplateContent(id) {
-        const t = templates.find(t => t.id === id);
-        if (!t) {
-            templateContentView.classList.add('hidden');
-            templateListView.classList.remove('hidden');
-            templateContentContainer.innerHTML = '';
-            return;
-        }
         templateListView.classList.add('hidden');
         templateContentView.classList.remove('hidden');
-        templateContentContainer.innerHTML = t.content;
+        templateEditActions.classList.add('hidden');
+        templateTitleInput.classList.add('hidden');
+        templateContentInput.classList.add('hidden');
+        templateTitle.classList.remove('hidden');
+        templateContentContainer.classList.remove('hidden');
+        isEditingTemplate = false;
+
+        if (isAddingTemplate) {
+            currentTemplate = { id: null, name: '', content: '' };
+            templateTitle.textContent = 'Click to enter title';
+            templateContentContainer.textContent = 'Click to enter content';
+        } else {
+            currentTemplate = templates.find(t => t.id === id);
+            if (!currentTemplate) return;
+            templateTitle.textContent = currentTemplate.name;
+            templateContentContainer.innerHTML = currentTemplate.content;
+        }
     }
 
-    backToListBtn.onclick = () => {
-        templateContentView.classList.add('hidden');
-        templateListView.classList.remove('hidden');
-        templateContentContainer.innerHTML = '';
-        selectedTemplateId = null;
+    // Inline editing for title
+    templateTitle.onclick = () => {
+        if (!isEditingTemplate) {
+            templateTitleInput.value = currentTemplate ? currentTemplate.name : '';
+            templateTitle.classList.add('hidden');
+            templateTitleInput.classList.remove('hidden');
+            templateTitleInput.focus();
+            isEditingTemplate = true;
+            templateEditActions.classList.remove('hidden');
+        }
+    };
+    templateTitleInput.onblur = () => {
+        if (isEditingTemplate) {
+            templateTitleInput.classList.add('hidden');
+            templateTitle.classList.remove('hidden');
+        }
+    };
+    // Inline editing for content
+    templateContentContainer.onclick = () => {
+        if (!isEditingTemplate) {
+            templateContentInput.value = currentTemplate ? currentTemplate.content : '';
+            templateContentContainer.classList.add('hidden');
+            templateContentInput.classList.remove('hidden');
+            templateContentInput.focus();
+            isEditingTemplate = true;
+            templateEditActions.classList.remove('hidden');
+        }
+    };
+    templateContentInput.onblur = () => {
+        if (isEditingTemplate) {
+            templateContentInput.classList.add('hidden');
+            templateContentContainer.classList.remove('hidden');
+        }
     };
 
-    showAddTemplateBtn.onclick = () => {
-        addTemplateForm.classList.remove('hidden');
-        showAddTemplateBtn.classList.add('hidden');
-        newTemplateNameInput.value = '';
-        newTemplateContentInput.value = '';
-        editingTemplateId = null;
-    };
-    cancelTemplateBtn.onclick = () => {
-        addTemplateForm.classList.add('hidden');
-        showAddTemplateBtn.classList.remove('hidden');
-        editingTemplateId = null;
-    };
+    // Save/Cancel logic
     saveTemplateBtn.onclick = async () => {
-        const name = newTemplateNameInput.value.trim();
-        const content = newTemplateContentInput.value.trim();
+        const name = templateTitleInput.value.trim() || templateTitle.textContent.trim();
+        const content = templateContentInput.value.trim() || templateContentContainer.innerHTML.trim();
         if (!name || !content) {
-            alert('Please enter both name and content.');
+            alert('Please enter both title and content.');
             return;
         }
-        if (editingTemplateId) {
-            // Rename only
-            const t = templates.find(t => t.id === editingTemplateId);
-            if (!t) return;
-            const res = await fetch('/api/templates', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: editingTemplateId, name, content: t.content })
-            });
-            if (res.ok) {
-                await fetchTemplates();
-                addTemplateForm.classList.add('hidden');
-                showAddTemplateBtn.classList.remove('hidden');
-                editingTemplateId = null;
-            }
-        } else {
+        if (isAddingTemplate) {
             // Add new
             const res = await fetch('/api/templates', {
                 method: 'POST',
@@ -380,19 +390,37 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (res.ok) {
                 await fetchTemplates();
-                addTemplateForm.classList.add('hidden');
-                showAddTemplateBtn.classList.remove('hidden');
+                backToListBtn.click();
+            }
+        } else if (currentTemplate) {
+            // Update existing
+            const res = await fetch('/api/templates', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: currentTemplate.id, name, content })
+            });
+            if (res.ok) {
+                await fetchTemplates();
+                backToListBtn.click();
             }
         }
     };
-    function startRenameTemplate(id, name) {
-        editingTemplateId = id;
-        addTemplateForm.classList.remove('hidden');
-        showAddTemplateBtn.classList.add('hidden');
-        newTemplateNameInput.value = name;
-        newTemplateContentInput.value = '';
-        newTemplateContentInput.placeholder = '(content not editable)';
-    }
+    cancelTemplateBtn.onclick = () => {
+        backToListBtn.click();
+    };
+
+    backToListBtn.onclick = () => {
+        templateContentView.classList.add('hidden');
+        templateListView.classList.remove('hidden');
+        templateContentContainer.innerHTML = '';
+        templateTitle.textContent = '';
+        templateTitleInput.value = '';
+        templateContentInput.value = '';
+        isEditingTemplate = false;
+        isAddingTemplate = false;
+        currentTemplate = null;
+        selectedTemplateId = null;
+    };
 
     // Initial Load
     getFeedbackNotes();

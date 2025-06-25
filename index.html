@@ -14,17 +14,20 @@
         <h1 class="column-header">PROMPT BUILDER</h1>
         <div id="template-list-view">
             <div id="template-list-container"></div>
-            <div id="add-template-form" class="hidden">
-                <input type="text" id="new-template-name" placeholder="Template name">
-                <textarea id="new-template-content" placeholder="Template content" rows="2"></textarea>
-                <button id="save-template-btn">Save</button>
-                <button id="cancel-template-btn">Cancel</button>
-            </div>
             <button id="show-add-template-btn">+ Add Template</button>
         </div>
         <div id="template-content-view" class="hidden">
             <button id="back-to-list-btn" class="back-btn">← Back</button>
-            <div id="template-content-container"></div>
+            <div id="template-title-container">
+                <span id="template-title" class="template-title"></span>
+                <input id="template-title-input" class="hidden template-title-input" type="text" placeholder="Template title">
+            </div>
+            <div id="template-content-container" class="template-content"></div>
+            <textarea id="template-content-input" class="hidden template-content-input" placeholder="Template content"></textarea>
+            <div id="template-edit-actions" class="hidden">
+                <button id="save-template-btn">Save</button>
+                <button id="cancel-template-btn">Cancel</button>
+            </div>
         </div>
     </div>
     <div class="column">
