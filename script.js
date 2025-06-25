@@ -18,9 +18,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalDeleteBtn = document.getElementById('modal-delete-btn');
     const modalSaveBtn = document.getElementById('modal-save-btn');
 
+    // --- PROMPT BUILDER TEMPLATES ---
+    const templateListContainer = document.getElementById('template-list-container');
+    const templateContentContainer = document.getElementById('template-content-container');
+    const showAddTemplateBtn = document.getElementById('show-add-template-btn');
+    const addTemplateForm = document.getElementById('add-template-form');
+    const newTemplateNameInput = document.getElementById('new-template-name');
+    const newTemplateContentInput = document.getElementById('new-template-content');
+    const saveTemplateBtn = document.getElementById('save-template-btn');
+    const cancelTemplateBtn = document.getElementById('cancel-template-btn');
+
     let activeNoteElement = null;
     let originalText = '';
     let currentFile = null;
+    let templates = [];
+    let selectedTemplateId = null;
+    let editingTemplateId = null;
 
     // --- Data Functions ---
     async function getFeedbackNotes() {
@@ -85,6 +98,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const newBlob = await response.json();
         return newBlob.url;
+    }
+
+    async function fetchTemplates() {
+        const res = await fetch('/api/templates');
+        if (!res.ok) return;
+        templates = await res.json();
+        renderTemplateList();
     }
 
     // --- DOM Functions ---
@@ -269,6 +289,100 @@ document.addEventListener('DOMContentLoaded', () => {
     modalDeleteBtn.addEventListener('click', deleteNote);
     modalOverlay.addEventListener('click', closeModal);
 
+    // --- PROMPT BUILDER TEMPLATES ---
+    function renderTemplateList() {
+        templateListContainer.innerHTML = '';
+        templates.forEach(t => {
+            const btn = document.createElement('button');
+            btn.className = 'template-btn' + (t.id === selectedTemplateId ? ' selected' : '');
+            btn.textContent = t.name;
+            btn.onclick = () => {
+                selectedTemplateId = t.id;
+                renderTemplateList();
+                showTemplateContent(t.id);
+            };
+            // Edit icon
+            const editBtn = document.createElement('button');
+            editBtn.className = 'edit-template-btn';
+            editBtn.innerHTML = '✏️';
+            editBtn.onclick = (e) => {
+                e.stopPropagation();
+                startRenameTemplate(t.id, t.name);
+            };
+            btn.appendChild(editBtn);
+            templateListContainer.appendChild(btn);
+        });
+    }
+
+    function showTemplateContent(id) {
+        const t = templates.find(t => t.id === id);
+        if (!t) {
+            templateContentContainer.classList.add('hidden');
+            templateContentContainer.textContent = '';
+            return;
+        }
+        templateContentContainer.textContent = t.content;
+        templateContentContainer.classList.remove('hidden');
+    }
+
+    showAddTemplateBtn.onclick = () => {
+        addTemplateForm.classList.remove('hidden');
+        showAddTemplateBtn.classList.add('hidden');
+        newTemplateNameInput.value = '';
+        newTemplateContentInput.value = '';
+        editingTemplateId = null;
+    };
+    cancelTemplateBtn.onclick = () => {
+        addTemplateForm.classList.add('hidden');
+        showAddTemplateBtn.classList.remove('hidden');
+        editingTemplateId = null;
+    };
+    saveTemplateBtn.onclick = async () => {
+        const name = newTemplateNameInput.value.trim();
+        const content = newTemplateContentInput.value.trim();
+        if (!name || !content) {
+            alert('Please enter both name and content.');
+            return;
+        }
+        if (editingTemplateId) {
+            // Rename only
+            const t = templates.find(t => t.id === editingTemplateId);
+            if (!t) return;
+            const res = await fetch('/api/templates', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: editingTemplateId, name, content: t.content })
+            });
+            if (res.ok) {
+                await fetchTemplates();
+                addTemplateForm.classList.add('hidden');
+                showAddTemplateBtn.classList.remove('hidden');
+                editingTemplateId = null;
+            }
+        } else {
+            // Add new
+            const res = await fetch('/api/templates', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, content })
+            });
+            if (res.ok) {
+                await fetchTemplates();
+                addTemplateForm.classList.add('hidden');
+                showAddTemplateBtn.classList.remove('hidden');
+            }
+        }
+    };
+    function startRenameTemplate(id, name) {
+        editingTemplateId = id;
+        addTemplateForm.classList.remove('hidden');
+        showAddTemplateBtn.classList.add('hidden');
+        newTemplateNameInput.value = name;
+        newTemplateContentInput.value = '';
+        newTemplateContentInput.placeholder = '(content not editable)';
+    }
+
     // Initial Load
     getFeedbackNotes();
+    fetchTemplates();
 }); 
