@@ -316,6 +316,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    showAddTemplateBtn.onclick = () => {
+        selectedTemplateId = null;
+        isAddingTemplate = true;
+        isEditingTemplate = true;
+        currentTemplate = { id: null, name: '', content: '' };
+        templateListView.classList.add('hidden');
+        templateContentView.classList.remove('hidden');
+        // Show input fields and Save/Cancel
+        templateTitle.classList.add('hidden');
+        templateTitleInput.classList.remove('hidden');
+        templateTitleInput.value = '';
+        templateContentContainer.classList.add('hidden');
+        templateContentInput.classList.remove('hidden');
+        templateContentInput.value = '';
+        templateEditActions.classList.remove('hidden');
+        templateTitleInput.focus();
+    };
+
     function showTemplateContent(id) {
         templateListView.classList.add('hidden');
         templateContentView.classList.remove('hidden');
@@ -327,9 +345,8 @@ document.addEventListener('DOMContentLoaded', () => {
         isEditingTemplate = false;
 
         if (isAddingTemplate) {
-            currentTemplate = { id: null, name: '', content: '' };
-            templateTitle.textContent = 'Click to enter title';
-            templateContentContainer.textContent = 'Click to enter content';
+            // This case is now handled by showAddTemplateBtn.onclick
+            return;
         } else {
             currentTemplate = templates.find(t => t.id === id);
             if (!currentTemplate) return;
@@ -349,12 +366,6 @@ document.addEventListener('DOMContentLoaded', () => {
             templateEditActions.classList.remove('hidden');
         }
     };
-    templateTitleInput.onblur = () => {
-        if (isEditingTemplate) {
-            templateTitleInput.classList.add('hidden');
-            templateTitle.classList.remove('hidden');
-        }
-    };
     // Inline editing for content
     templateContentContainer.onclick = () => {
         if (!isEditingTemplate) {
@@ -366,17 +377,12 @@ document.addEventListener('DOMContentLoaded', () => {
             templateEditActions.classList.remove('hidden');
         }
     };
-    templateContentInput.onblur = () => {
-        if (isEditingTemplate) {
-            templateContentInput.classList.add('hidden');
-            templateContentContainer.classList.remove('hidden');
-        }
-    };
 
     // Save/Cancel logic
     saveTemplateBtn.onclick = async () => {
-        const name = templateTitleInput.value.trim() || templateTitle.textContent.trim();
-        const content = templateContentInput.value.trim() || templateContentContainer.innerHTML.trim();
+        // Always get values from input fields if visible, else from display
+        const name = !templateTitleInput.classList.contains('hidden') ? templateTitleInput.value.trim() : templateTitle.textContent.trim();
+        const content = !templateContentInput.classList.contains('hidden') ? templateContentInput.value.trim() : templateContentContainer.innerHTML.trim();
         if (!name || !content) {
             alert('Please enter both title and content.');
             return;
