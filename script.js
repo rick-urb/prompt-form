@@ -138,6 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         const newElement = await response.json();
+        // Only render if the backend confirms it was saved
         createPromptElement(newElement);
     }
     
@@ -191,7 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function createPromptElement({ id, type, text, options }) {
-        if (type !== 'dropdown') return;
+        if (type !== 'dropdown' || !id || !text || !Array.isArray(options)) return;
 
         const element = document.createElement('div');
         element.className = 'prompt-element';

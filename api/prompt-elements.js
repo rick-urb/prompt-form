@@ -19,9 +19,16 @@ export default async function handler(request, response) {
       const elementsArray = Object.entries(elementsData)
         .map(([id, data]) => {
           try {
-            return { id, ...JSON.parse(data) };
+            const parsed = JSON.parse(data);
+            if (
+              typeof parsed.type === 'string' &&
+              typeof parsed.text === 'string' &&
+              Array.isArray(parsed.options)
+            ) {
+              return { id, ...parsed };
+            }
+            return null;
           } catch (e) {
-            // Skip invalid/corrupt entries
             return null;
           }
         })
@@ -30,6 +37,9 @@ export default async function handler(request, response) {
 
     } else if (method === 'POST') {
       const { type, text, options, order } = request.body;
+      if (!type || !text || !Array.isArray(options) || options.length === 0) {
+        return response.status(400).json({ error: 'Invalid element data' });
+      }
       const id = `element_${Date.now()}`;
       const elementData = JSON.stringify({ type, text, options, order });
 
