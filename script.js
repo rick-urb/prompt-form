@@ -73,8 +73,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function createFeedbackNoteElement({ id, text }) {
         const noteElement = document.createElement('div');
         noteElement.classList.add('feedback-note');
-        noteElement.textContent = text;
         noteElement.dataset.id = id;
+        noteElement.dataset.fullText = text;
+
+        if (text.length > 25) {
+            noteElement.textContent = text.substring(0, 25) + '...';
+        } else {
+            noteElement.textContent = text;
+        }
         
         noteElement.addEventListener('click', () => {
             openModal(noteElement);
@@ -86,9 +92,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Modal Functions ---
     function openModal(noteElement) {
         activeNoteElement = noteElement;
-        originalText = noteElement.textContent;
-        modalText.textContent = originalText;
-        modalEditInput.value = originalText;
+        const fullText = noteElement.dataset.fullText;
+        originalText = fullText;
+        modalText.textContent = fullText;
+        modalEditInput.value = fullText;
 
         exitEditMode();
         modalOverlay.style.display = 'block';
@@ -133,7 +140,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (newText && noteId) {
             const success = await updateFeedbackNote(noteId, newText);
             if(success) {
-                activeNoteElement.textContent = newText;
+                activeNoteElement.dataset.fullText = newText;
+                if (newText.length > 25) {
+                    activeNoteElement.textContent = newText.substring(0, 25) + '...';
+                } else {
+                    activeNoteElement.textContent = newText;
+                }
+                
                 originalText = newText;
                 modalText.textContent = newText;
                 exitEditMode();
