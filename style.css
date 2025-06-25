@@ -335,4 +335,11 @@ body {
     word-break: break-word;
     box-shadow: 0 2px 8px rgba(0,0,0,0.04);
     overflow: auto;
+}
+
+#template-content-view.hidden {
+    display: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
 } 
