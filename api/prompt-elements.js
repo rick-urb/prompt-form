@@ -38,7 +38,6 @@ export default async function handler(request, response) {
       }
       const id = `element_${Date.now()}`;
       const elementData = JSON.stringify({ type, text, options, order });
-
       await redis.hset('prompt_elements', id, elementData);
       return response.status(201).json({ id, type, text, options, order });
 
@@ -47,18 +46,16 @@ export default async function handler(request, response) {
       if (!id) {
         return response.status(400).json({ error: 'ID is required' });
       }
-      // First, get the existing element to preserve its type
       const existingData = await redis.hget('prompt_elements', id);
       if (!existingData) {
-          return response.status(404).json({ error: 'Element not found' });
+        return response.status(404).json({ error: 'Element not found' });
       }
       const existingElement = JSON.parse(existingData);
-
-      const elementData = JSON.stringify({ 
-          type: existingElement.type, 
-          text: text, 
-          options: options,
-          order: order,
+      const elementData = JSON.stringify({
+        type: existingElement.type,
+        text: text,
+        options: options,
+        order: order,
       });
       await redis.hset('prompt_elements', id, elementData);
       return response.status(200).json({ id, ...JSON.parse(elementData) });
