@@ -18,8 +18,8 @@ body {
 .column {
     flex: 1;
     height: 100%;
-    background-color: lightgray;
-    border: 1px solid #ddd;
+    background-color: #eeeeee;
+    border: 1px solid black;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     border-radius: 8px;
     padding: 20px;
