@@ -361,9 +361,11 @@ document.addEventListener('DOMContentLoaded', () => {
             templateTitleInput.value = currentTemplate ? currentTemplate.name : '';
             templateTitle.classList.add('hidden');
             templateTitleInput.classList.remove('hidden');
+            templateContentContainer.classList.add('hidden');
+            templateContentInput.classList.add('hidden');
+            templateEditActions.classList.remove('hidden');
             templateTitleInput.focus();
             isEditingTemplate = true;
-            templateEditActions.classList.remove('hidden');
         }
     };
     // Inline editing for content
@@ -372,9 +374,11 @@ document.addEventListener('DOMContentLoaded', () => {
             templateContentInput.value = currentTemplate ? currentTemplate.content : '';
             templateContentContainer.classList.add('hidden');
             templateContentInput.classList.remove('hidden');
+            templateTitle.classList.add('hidden');
+            templateTitleInput.classList.add('hidden');
+            templateEditActions.classList.remove('hidden');
             templateContentInput.focus();
             isEditingTemplate = true;
-            templateEditActions.classList.remove('hidden');
         }
     };
 
@@ -412,7 +416,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     cancelTemplateBtn.onclick = () => {
-        backToListBtn.click();
+        if (isAddingTemplate) {
+            backToListBtn.click();
+        } else {
+            // Return to view mode
+            templateTitleInput.classList.add('hidden');
+            templateContentInput.classList.add('hidden');
+            templateTitle.classList.remove('hidden');
+            templateContentContainer.classList.remove('hidden');
+            templateEditActions.classList.add('hidden');
+            isEditingTemplate = false;
+        }
     };
 
     backToListBtn.onclick = () => {
