@@ -28,6 +28,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveTemplateBtn = document.getElementById('save-template-btn');
     const cancelTemplateBtn = document.getElementById('cancel-template-btn');
     const templatePreviewIframe = document.getElementById('template-preview-iframe');
+    const templateListView = document.getElementById('template-list-view');
+    const templateContentView = document.getElementById('template-content-view');
+    const backToListBtn = document.getElementById('back-to-list-btn');
 
     let activeNoteElement = null;
     let originalText = '';
@@ -295,11 +298,10 @@ document.addEventListener('DOMContentLoaded', () => {
         templateListContainer.innerHTML = '';
         templates.forEach(t => {
             const btn = document.createElement('button');
-            btn.className = 'template-btn' + (t.id === selectedTemplateId ? ' selected' : '');
+            btn.className = 'template-btn';
             btn.textContent = t.name;
             btn.onclick = () => {
                 selectedTemplateId = t.id;
-                renderTemplateList();
                 showTemplateContent(t.id);
             };
             // Edit icon
@@ -318,15 +320,22 @@ document.addEventListener('DOMContentLoaded', () => {
     function showTemplateContent(id) {
         const t = templates.find(t => t.id === id);
         if (!t) {
-            templateContentContainer.classList.add('hidden');
-            templatePreviewIframe.style.display = 'none';
+            templateContentView.classList.add('hidden');
+            templateListView.classList.remove('hidden');
+            templateContentContainer.innerHTML = '';
             return;
         }
-        templateContentContainer.classList.remove('hidden');
-        templatePreviewIframe.style.display = 'block';
-        // Set iframe content
-        templatePreviewIframe.srcdoc = t.content;
+        templateListView.classList.add('hidden');
+        templateContentView.classList.remove('hidden');
+        templateContentContainer.innerHTML = t.content;
     }
+
+    backToListBtn.onclick = () => {
+        templateContentView.classList.add('hidden');
+        templateListView.classList.remove('hidden');
+        templateContentContainer.innerHTML = '';
+        selectedTemplateId = null;
+    };
 
     showAddTemplateBtn.onclick = () => {
         addTemplateForm.classList.remove('hidden');
