@@ -24,7 +24,7 @@ export default async function handler(request, response) {
       const id = `element_${Date.now()}`;
       const elementData = JSON.stringify({ type, text, options, order });
 
-      await redis.hset('prompt_elements', { [id]: elementData });
+      await redis.hset('prompt_elements', id, elementData);
       return response.status(201).json({ id, type, text, options, order });
 
     } else if (method === 'PUT') {
@@ -45,7 +45,7 @@ export default async function handler(request, response) {
           options: options,
           order: order,
       });
-      await redis.hset('prompt_elements', { [id]: elementData });
+      await redis.hset('prompt_elements', id, elementData);
       return response.status(200).json({ id, ...JSON.parse(elementData) });
 
     } else if (method === 'DELETE') {
