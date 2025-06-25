@@ -5,8 +5,6 @@ const redis = new Redis({
   token: process.env.KV_REST_API_TOKEN,
 });
 
-const a_day_in_seconds = 86400;
-
 export default async function handler(request, response) {
   const { method } = request;
 
@@ -16,58 +14,42 @@ export default async function handler(request, response) {
       if (!elementsData) {
         return response.status(200).json([]);
       }
-      const elementsArray = Object.entries(elementsData)
-        .map(([id, data]) => {
+      // hgetall returns an object, parse each value from a JSON string
+      const elementsArray = Object.entries(elementsData).map(([id, data]) => {
           try {
-            const parsed = JSON.parse(data);
-            if (typeof parsed.type === 'string') {
-              return { id, ...parsed };
-            }
-            return null;
+            // New format: data is a JSON string
+            const element = JSON.parse(data);
+            return { id, text: element.text, imageUrl: element.imageUrl };
           } catch (e) {
-            return null;
+            // Old format: data is a plain string
+            return { id, text: data, imageUrl: null };
           }
-        })
-        .filter(Boolean);
+      });
       return response.status(200).json(elementsArray);
-
     } else if (method === 'POST') {
-      const { type, text, options, order } = request.body;
-      if (!type || !text || !Array.isArray(options) || options.length === 0) {
-        return response.status(400).json({ error: 'Invalid element data' });
+      const { text, imageUrl } = request.body;
+      if (!text) {
+        return response.status(400).json({ error: 'Text is required' });
       }
       const id = `element_${Date.now()}`;
-      const elementData = JSON.stringify({ type, text, options, order });
-      await redis.hset('prompt_elements', id, elementData);
-      return response.status(201).json({ id, type, text, options, order });
-
+      const elementData = JSON.stringify({ text, imageUrl: imageUrl || null });
+      await redis.hset('prompt_elements', { [id]: elementData });
+      return response.status(201).json({ id, text, imageUrl: imageUrl || null });
     } else if (method === 'PUT') {
-      const { id, text, options, order } = request.body;
-      if (!id) {
-        return response.status(400).json({ error: 'ID is required' });
-      }
-      const existingData = await redis.hget('prompt_elements', id);
-      if (!existingData) {
-        return response.status(404).json({ error: 'Element not found' });
-      }
-      const existingElement = JSON.parse(existingData);
-      const elementData = JSON.stringify({
-        type: existingElement.type,
-        text: text,
-        options: options,
-        order: order,
-      });
-      await redis.hset('prompt_elements', id, elementData);
-      return response.status(200).json({ id, ...JSON.parse(elementData) });
-
+        const { id, text, imageUrl } = request.body;
+        if (!id || !text) {
+            return response.status(400).json({ error: 'ID and text are required' });
+        }
+        const elementData = JSON.stringify({ text, imageUrl: imageUrl || null });
+        await redis.hset('prompt_elements', { [id]: elementData });
+        return response.status(200).json({ id, text, imageUrl: imageUrl || null });
     } else if (method === 'DELETE') {
-      const { id } = request.body;
-      if (!id) {
-        return response.status(400).json({ error: 'ID is required' });
-      }
-      await redis.hdel('prompt_elements', id);
-      return response.status(204).end();
-      
+        const { id } = request.body;
+        if (!id) {
+            return response.status(400).json({ error: 'ID is required' });
+        }
+        await redis.hdel('prompt_elements', id);
+        return response.status(204).end();
     } else {
       response.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
       return response.status(405).end(`Method ${method} Not Allowed`);
