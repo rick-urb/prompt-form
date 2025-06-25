@@ -16,8 +16,14 @@ export default async function handler(request, response) {
       }
       // hgetall returns an object, parse each value from a JSON string
       const notesArray = Object.entries(notesData).map(([id, data]) => {
-          const note = JSON.parse(data);
-          return { id, text: note.text, imageUrl: note.imageUrl };
+          try {
+            // New format: data is a JSON string
+            const note = JSON.parse(data);
+            return { id, text: note.text, imageUrl: note.imageUrl };
+          } catch (e) {
+            // Old format: data is a plain string
+            return { id, text: data, imageUrl: null };
+          }
       });
       return response.status(200).json(notesArray);
     } else if (method === 'POST') {
