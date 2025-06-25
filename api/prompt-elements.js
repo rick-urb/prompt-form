@@ -20,11 +20,7 @@ export default async function handler(request, response) {
         .map(([id, data]) => {
           try {
             const parsed = JSON.parse(data);
-            if (
-              typeof parsed.type === 'string' &&
-              typeof parsed.text === 'string' &&
-              Array.isArray(parsed.options)
-            ) {
+            if (typeof parsed.type === 'string') {
               return { id, ...parsed };
             }
             return null;

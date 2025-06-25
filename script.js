@@ -192,7 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function createPromptElement({ id, type, text, options }) {
-        if (type !== 'dropdown' || !id || !text || !Array.isArray(options)) return;
+        if (type !== 'dropdown' || !id) return;
 
         const element = document.createElement('div');
         element.className = 'prompt-element';
