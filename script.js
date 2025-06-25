@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const newTemplateContentInput = document.getElementById('new-template-content');
     const saveTemplateBtn = document.getElementById('save-template-btn');
     const cancelTemplateBtn = document.getElementById('cancel-template-btn');
+    const templatePreviewIframe = document.getElementById('template-preview-iframe');
 
     let activeNoteElement = null;
     let originalText = '';
@@ -318,11 +319,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const t = templates.find(t => t.id === id);
         if (!t) {
             templateContentContainer.classList.add('hidden');
-            templateContentContainer.textContent = '';
+            templatePreviewIframe.style.display = 'none';
             return;
         }
-        templateContentContainer.textContent = t.content;
         templateContentContainer.classList.remove('hidden');
+        templatePreviewIframe.style.display = 'block';
+        // Set iframe content
+        templatePreviewIframe.srcdoc = t.content;
     }
 
     showAddTemplateBtn.onclick = () => {
