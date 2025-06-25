@@ -9,8 +9,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Modal elements
     const modalOverlay = document.getElementById('modal-overlay');
-    
-    // Feedback Modal Elements
     const feedbackModal = document.getElementById('feedback-modal');
     const modalCloseBtn = document.getElementById('modal-close-btn');
     const modalText = document.getElementById('modal-text');
@@ -21,7 +19,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalSaveBtn = document.getElementById('modal-save-btn');
 
     let activeNoteElement = null;
-    let activePromptElement = null; // To keep track of the element being edited
     let originalText = '';
     let currentFile = null;
 
@@ -119,10 +116,6 @@ document.addEventListener('DOMContentLoaded', () => {
         imagePreview.src = '';
         imagePreview.classList.add('hidden');
         removeImageBtn.classList.add('hidden');
-        modalImage.classList.add('hidden');
-        exitEditMode();
-        modalOverlay.style.display = 'block';
-        feedbackModal.style.display = 'block';
     }
 
     // --- Modal Functions ---

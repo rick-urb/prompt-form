@@ -9,11 +9,9 @@
 <body>
     <div class="column">
         <h1 class="column-header">LIBRARY</h1>
-        <div class="library-item" draggable="true" data-type="dropdown">Dropdown</div>
     </div>
     <div class="column">
         <h1 class="column-header">PROMPT BUILDER</h1>
-        <div id="prompt-builder-container" class="dropzone"></div>
     </div>
     <div class="column">
         <h1 class="column-header">FEEDBACK</h1>
@@ -44,26 +42,5 @@
         <button id="modal-save-btn" class="hidden">✔️</button>
     </div>
 </div>
-
-<!-- Dropdown Editor Modal -->
-<div id="dropdown-editor-modal" class="hidden">
-    <button id="dropdown-modal-close-btn">&times;</button>
-    <h3>Edit Dropdown Element</h3>
-    <div id="dropdown-modal-content">
-        <label for="dropdown-text-input">Display Text</label>
-        <textarea id="dropdown-text-input" rows="3" placeholder="e.g., Please select a {{dropdown}} option."></textarea>
-        
-        <label>Dropdown Options</label>
-        <div id="dropdown-options-container">
-            <!-- Options will be dynamically added here -->
-        </div>
-        <button id="add-dropdown-option-btn">+ Add Option</button>
-    </div>
-    <div id="dropdown-modal-actions">
-        <button id="dropdown-modal-delete-btn">🗑️</button>
-        <button id="dropdown-modal-save-btn">✔️ Save</button>
-    </div>
-</div>
-
 <script src="script.js"></script>
 </html> 
