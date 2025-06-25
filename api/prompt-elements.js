@@ -16,7 +16,16 @@ export default async function handler(request, response) {
       if (!elementsData) {
         return response.status(200).json([]);
       }
-      const elementsArray = Object.entries(elementsData).map(([id, data]) => ({ id, ...JSON.parse(data) }));
+      const elementsArray = Object.entries(elementsData)
+        .map(([id, data]) => {
+          try {
+            return { id, ...JSON.parse(data) };
+          } catch (e) {
+            // Skip invalid/corrupt entries
+            return null;
+          }
+        })
+        .filter(Boolean);
       return response.status(200).json(elementsArray);
 
     } else if (method === 'POST') {
