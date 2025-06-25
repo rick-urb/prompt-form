@@ -1,14 +1,18 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Feedback list elements
+    // Main form elements
     const feedbackInput = document.getElementById('feedback-input');
     const addFeedbackBtn = document.getElementById('add-feedback-btn');
     const feedbackListContainer = document.getElementById('feedback-list-container');
+    const imageUploadInput = document.getElementById('image-upload-input');
+    const imagePreview = document.getElementById('image-preview');
+    const removeImageBtn = document.getElementById('remove-image-btn');
 
     // Modal elements
     const modalOverlay = document.getElementById('modal-overlay');
     const feedbackModal = document.getElementById('feedback-modal');
     const modalCloseBtn = document.getElementById('modal-close-btn');
     const modalText = document.getElementById('modal-text');
+    const modalImage = document.getElementById('modal-image');
     const modalEditInput = document.getElementById('modal-edit-input');
     const modalEditBtn = document.getElementById('modal-edit-btn');
     const modalDeleteBtn = document.getElementById('modal-delete-btn');
@@ -16,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let activeNoteElement = null;
     let originalText = '';
+    let currentFile = null;
 
     // --- Data Functions ---
     async function getFeedbackNotes() {
@@ -29,11 +34,11 @@ document.addEventListener('DOMContentLoaded', () => {
         notes.forEach(note => createFeedbackNoteElement(note));
     }
 
-    async function addFeedbackNote(text) {
+    async function addFeedbackNote(text, imageUrl) {
         const response = await fetch('/api/feedback', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text }),
+            body: JSON.stringify({ text, imageUrl }),
         });
         if (!response.ok) {
             console.error('Failed to add note');
@@ -43,11 +48,11 @@ document.addEventListener('DOMContentLoaded', () => {
         createFeedbackNoteElement(newNote);
     }
 
-    async function updateFeedbackNote(id, text) {
+    async function updateFeedbackNote(id, text, imageUrl) {
         const response = await fetch('/api/feedback', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, text }),
+            body: JSON.stringify({ id, text, imageUrl }),
         });
          if (!response.ok) {
             console.error('Failed to update note');
@@ -69,17 +74,32 @@ document.addEventListener('DOMContentLoaded', () => {
         return true;
     }
 
+    async function uploadImage(file) {
+        const response = await fetch(`/api/upload?filename=${file.name}`, {
+            method: 'POST',
+            body: file,
+        });
+        if (!response.ok) {
+            console.error('Failed to upload image');
+            return null;
+        }
+        const newBlob = await response.json();
+        return newBlob.url;
+    }
+
     // --- DOM Functions ---
-    function createFeedbackNoteElement({ id, text }) {
+    function createFeedbackNoteElement({ id, text, imageUrl }) {
         const noteElement = document.createElement('div');
         noteElement.classList.add('feedback-note');
         noteElement.dataset.id = id;
         noteElement.dataset.fullText = text;
+        noteElement.dataset.imageUrl = imageUrl || '';
 
-        if (text.length > 25) {
-            noteElement.textContent = text.substring(0, 25) + '...';
+        const displayText = (imageUrl ? '📷 ' : '') + text;
+        if (displayText.length > 25) {
+            noteElement.textContent = displayText.substring(0, 25) + '...';
         } else {
-            noteElement.textContent = text;
+            noteElement.textContent = displayText;
         }
         
         noteElement.addEventListener('click', () => {
@@ -89,13 +109,32 @@ document.addEventListener('DOMContentLoaded', () => {
         feedbackListContainer.appendChild(noteElement);
     }
 
+    function resetForm() {
+        feedbackInput.value = '';
+        imageUploadInput.value = ''; // Reset file input
+        currentFile = null;
+        imagePreview.src = '';
+        imagePreview.classList.add('hidden');
+        removeImageBtn.classList.add('hidden');
+    }
+
     // --- Modal Functions ---
     function openModal(noteElement) {
         activeNoteElement = noteElement;
         const fullText = noteElement.dataset.fullText;
+        const imageUrl = noteElement.dataset.imageUrl;
+
         originalText = fullText;
         modalText.textContent = fullText;
         modalEditInput.value = fullText;
+
+        if (imageUrl) {
+            modalImage.src = imageUrl;
+            modalImage.classList.remove('hidden');
+        } else {
+            modalImage.src = '';
+            modalImage.classList.add('hidden');
+        }
 
         exitEditMode();
         modalOverlay.style.display = 'block';
@@ -108,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (wasInEditMode && isTextChanged) {
             if (confirm('You have unsaved changes. Do you want to save them?')) {
-                saveNote(); // saveNote will handle closing
+                saveNote();
                 return; 
             }
         }
@@ -121,6 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function enterEditMode() {
         modalText.classList.add('hidden');
+        modalImage.classList.add('hidden'); // Hide image in edit mode
         modalEditInput.classList.remove('hidden');
         modalEditBtn.classList.add('hidden');
         modalSaveBtn.classList.remove('hidden');
@@ -129,6 +169,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function exitEditMode() {
         modalText.classList.remove('hidden');
+        // only show image if it exists
+        if (activeNoteElement && activeNoteElement.dataset.imageUrl) {
+             modalImage.classList.remove('hidden');
+        }
         modalEditInput.classList.add('hidden');
         modalEditBtn.classList.remove('hidden');
         modalSaveBtn.classList.add('hidden');
@@ -137,14 +181,18 @@ document.addEventListener('DOMContentLoaded', () => {
     async function saveNote() {
         const newText = modalEditInput.value.trim();
         const noteId = activeNoteElement.dataset.id;
+        const imageUrl = activeNoteElement.dataset.imageUrl;
+
         if (newText && noteId) {
-            const success = await updateFeedbackNote(noteId, newText);
+            const success = await updateFeedbackNote(noteId, newText, imageUrl);
             if(success) {
+                // Update the note in the list
                 activeNoteElement.dataset.fullText = newText;
-                if (newText.length > 25) {
-                    activeNoteElement.textContent = newText.substring(0, 25) + '...';
+                const displayText = (imageUrl ? '📷 ' : '') + newText;
+                 if (displayText.length > 25) {
+                    activeNoteElement.textContent = displayText.substring(0, 25) + '...';
                 } else {
-                    activeNoteElement.textContent = newText;
+                    activeNoteElement.textContent = displayText;
                 }
                 
                 originalText = newText;
@@ -174,19 +222,45 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Event Listeners ---
-    addFeedbackBtn.addEventListener('click', () => {
+    addFeedbackBtn.addEventListener('click', async () => {
         const feedbackText = feedbackInput.value.trim();
-        if (feedbackText !== '') {
-            addFeedbackNote(feedbackText);
-            feedbackInput.value = '';
-            feedbackInput.focus();
+        if (feedbackText === '' && !currentFile) {
+            alert("Please enter some text or select an image.");
+            return;
         }
+
+        let imageUrl = null;
+        if (currentFile) {
+            imageUrl = await uploadImage(currentFile);
+            if (!imageUrl) {
+                alert("Image upload failed. Please try again.");
+                return;
+            }
+        }
+
+        await addFeedbackNote(feedbackText, imageUrl);
+        resetForm();
+        feedbackInput.focus();
     });
 
     feedbackInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
+        if (e.key === 'Enter' && !e.shiftKey) { // Allow shift+enter for new line
+            e.preventDefault();
             addFeedbackBtn.click();
         }
+    });
+    
+    imageUploadInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+            currentFile = e.target.files[0];
+            imagePreview.src = URL.createObjectURL(currentFile);
+            imagePreview.classList.remove('hidden');
+            removeImageBtn.classList.remove('hidden');
+        }
+    });
+
+    removeImageBtn.addEventListener('click', () => {
+        resetForm();
     });
 
     modalCloseBtn.addEventListener('click', closeModal);

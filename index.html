@@ -16,8 +16,14 @@
     <div class="column">
         <h1 class="column-header">FEEDBACK</h1>
         <div class="feedback-form">
-            <input type="text" id="feedback-input" placeholder="Type here...">
+            <textarea id="feedback-input" placeholder="Type here..." rows="3"></textarea>
+            <input type="file" id="image-upload-input" class="hidden" accept="image/*">
+            <label for="image-upload-input" class="image-upload-label">🖼️</label>
             <button id="add-feedback-btn">Add</button>
+        </div>
+        <div class="image-preview-container">
+             <img id="image-preview" class="hidden" />
+             <button id="remove-image-btn" class="hidden">&times;</button>
         </div>
         <div id="feedback-list-container"></div>
     </div>
@@ -26,6 +32,7 @@
 <div id="feedback-modal">
     <button id="modal-close-btn">&times;</button>
     <div id="modal-content">
+        <img id="modal-image" class="hidden" />
         <p id="modal-text"></p>
         <textarea id="modal-edit-input" class="hidden"></textarea>
     </div>

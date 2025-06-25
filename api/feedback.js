@@ -10,25 +10,33 @@ export default async function handler(request, response) {
 
   try {
     if (method === 'GET') {
-      const notes = await redis.hgetall('notes');
-      // hgetall returns an object, convert it to an array of objects
-      const notesArray = notes ? Object.entries(notes).map(([id, text]) => ({ id, text })) : [];
+      const notesData = await redis.hgetall('notes');
+      if (!notesData) {
+        return response.status(200).json([]);
+      }
+      // hgetall returns an object, parse each value from a JSON string
+      const notesArray = Object.entries(notesData).map(([id, data]) => {
+          const note = JSON.parse(data);
+          return { id, text: note.text, imageUrl: note.imageUrl };
+      });
       return response.status(200).json(notesArray);
     } else if (method === 'POST') {
-      const { text } = request.body;
+      const { text, imageUrl } = request.body;
       if (!text) {
         return response.status(400).json({ error: 'Text is required' });
       }
       const id = `note_${Date.now()}`;
-      await redis.hset('notes', { [id]: text });
-      return response.status(201).json({ id, text });
+      const noteData = JSON.stringify({ text, imageUrl: imageUrl || null });
+      await redis.hset('notes', { [id]: noteData });
+      return response.status(201).json({ id, text, imageUrl: imageUrl || null });
     } else if (method === 'PUT') {
-        const { id, text } = request.body;
+        const { id, text, imageUrl } = request.body;
         if (!id || !text) {
             return response.status(400).json({ error: 'ID and text are required' });
         }
-        await redis.hset('notes', { [id]: text });
-        return response.status(200).json({ id, text });
+        const noteData = JSON.stringify({ text, imageUrl: imageUrl || null });
+        await redis.hset('notes', { [id]: noteData });
+        return response.status(200).json({ id, text, imageUrl: imageUrl || null });
     } else if (method === 'DELETE') {
         const { id } = request.body;
         if (!id) {
