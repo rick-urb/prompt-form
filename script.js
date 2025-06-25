@@ -20,28 +20,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- PROMPT BUILDER TEMPLATES ---
     const templateListContainer = document.getElementById('template-list-container');
-    const templateContentContainer = document.getElementById('template-content-container');
-    const showAddTemplateBtn = document.getElementById('show-add-template-btn');
-    const addTemplateForm = document.getElementById('add-template-form');
-    const newTemplateNameInput = document.getElementById('new-template-name');
-    const newTemplateContentInput = document.getElementById('new-template-content');
-    const saveTemplateBtn = document.getElementById('save-template-btn');
-    const cancelTemplateBtn = document.getElementById('cancel-template-btn');
-    const templatePreviewIframe = document.getElementById('template-preview-iframe');
     const templateListView = document.getElementById('template-list-view');
     const templateContentView = document.getElementById('template-content-view');
     const backToListBtn = document.getElementById('back-to-list-btn');
     const templateTitle = document.getElementById('template-title');
     const templateTitleInput = document.getElementById('template-title-input');
+    const templateContentContainer = document.getElementById('template-content-container');
     const templateContentInput = document.getElementById('template-content-input');
     const templateEditActions = document.getElementById('template-edit-actions');
+    const saveTemplateBtn = document.getElementById('save-template-btn');
+    const cancelTemplateBtn = document.getElementById('cancel-template-btn');
+    const showAddTemplateBtn = document.getElementById('show-add-template-btn');
 
     let activeNoteElement = null;
     let originalText = '';
     let currentFile = null;
     let templates = [];
     let selectedTemplateId = null;
-    let editingTemplateId = null;
     let isEditingTemplate = false;
     let isAddingTemplate = false;
     let currentTemplate = null;
@@ -306,7 +301,7 @@ document.addEventListener('DOMContentLoaded', () => {
         templates.forEach(t => {
             const btn = document.createElement('button');
             btn.className = 'template-btn';
-            btn.textContent = t.name;
+            btn.textContent = t.name || t.id;
             btn.onclick = () => {
                 selectedTemplateId = t.id;
                 isAddingTemplate = false;
@@ -323,7 +318,6 @@ document.addEventListener('DOMContentLoaded', () => {
         currentTemplate = { id: null, name: '', content: '' };
         templateListView.classList.add('hidden');
         templateContentView.classList.remove('hidden');
-        // Show input fields and Save/Cancel
         templateTitle.classList.add('hidden');
         templateTitleInput.classList.remove('hidden');
         templateTitleInput.value = '';
@@ -343,19 +337,15 @@ document.addEventListener('DOMContentLoaded', () => {
         templateTitle.classList.remove('hidden');
         templateContentContainer.classList.remove('hidden');
         isEditingTemplate = false;
+        isAddingTemplate = false;
 
-        if (isAddingTemplate) {
-            // This case is now handled by showAddTemplateBtn.onclick
-            return;
-        } else {
-            currentTemplate = templates.find(t => t.id === id);
-            if (!currentTemplate) return;
-            templateTitle.textContent = currentTemplate.name;
-            templateContentContainer.innerHTML = currentTemplate.content;
-        }
+        currentTemplate = templates.find(t => t.id === id);
+        if (!currentTemplate) return;
+        templateTitle.textContent = currentTemplate.name;
+        templateContentContainer.innerHTML = currentTemplate.content;
     }
 
-    // Inline editing for title
+    // --- Inline Editing ---
     templateTitle.onclick = () => {
         if (!isEditingTemplate) {
             templateTitleInput.value = currentTemplate ? currentTemplate.name : '';
@@ -368,7 +358,6 @@ document.addEventListener('DOMContentLoaded', () => {
             isEditingTemplate = true;
         }
     };
-    // Inline editing for content
     templateContentContainer.onclick = () => {
         if (!isEditingTemplate) {
             templateContentInput.value = currentTemplate ? currentTemplate.content : '';
@@ -382,9 +371,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Save/Cancel logic
+    // --- Save/Cancel ---
     saveTemplateBtn.onclick = async () => {
-        // Always get values from input fields if visible, else from display
         const name = !templateTitleInput.classList.contains('hidden') ? templateTitleInput.value.trim() : templateTitle.textContent.trim();
         const content = !templateContentInput.classList.contains('hidden') ? templateContentInput.value.trim() : templateContentContainer.innerHTML.trim();
         if (!name || !content) {
@@ -392,7 +380,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         if (isAddingTemplate) {
-            // Add new
             const res = await fetch('/api/templates', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -403,7 +390,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 backToListBtn.click();
             }
         } else if (currentTemplate) {
-            // Update existing
             const res = await fetch('/api/templates', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
