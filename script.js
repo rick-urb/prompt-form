@@ -14,28 +14,83 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalDeleteBtn = document.getElementById('modal-delete-btn');
     const modalSaveBtn = document.getElementById('modal-save-btn');
 
-    let activeNote = null;
+    let activeNoteElement = null;
     let originalText = '';
 
-    function createFeedbackNote(text) {
-        const note = document.createElement('div');
-        note.classList.add('feedback-note');
-        note.textContent = text;
-        
-        note.addEventListener('click', () => {
-            openModal(note);
-        });
-
-        feedbackListContainer.appendChild(note);
+    // --- Data Functions ---
+    async function getFeedbackNotes() {
+        const response = await fetch('/api/feedback');
+        if (!response.ok) {
+            console.error('Failed to fetch notes');
+            return;
+        }
+        const notes = await response.json();
+        feedbackListContainer.innerHTML = '';
+        notes.forEach(note => createFeedbackNoteElement(note));
     }
 
-    function openModal(note) {
-        activeNote = note;
-        originalText = note.textContent;
+    async function addFeedbackNote(text) {
+        const response = await fetch('/api/feedback', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text }),
+        });
+        if (!response.ok) {
+            console.error('Failed to add note');
+            return;
+        }
+        const newNote = await response.json();
+        createFeedbackNoteElement(newNote);
+    }
+
+    async function updateFeedbackNote(id, text) {
+        const response = await fetch('/api/feedback', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, text }),
+        });
+         if (!response.ok) {
+            console.error('Failed to update note');
+            return false;
+        }
+        return true;
+    }
+
+    async function deleteFeedbackNote(id) {
+        const response = await fetch('/api/feedback', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id }),
+        });
+        if (!response.ok) {
+            console.error('Failed to delete note');
+            return false;
+        }
+        return true;
+    }
+
+    // --- DOM Functions ---
+    function createFeedbackNoteElement({ id, text }) {
+        const noteElement = document.createElement('div');
+        noteElement.classList.add('feedback-note');
+        noteElement.textContent = text;
+        noteElement.dataset.id = id;
+        
+        noteElement.addEventListener('click', () => {
+            openModal(noteElement);
+        });
+
+        feedbackListContainer.appendChild(noteElement);
+    }
+
+    // --- Modal Functions ---
+    function openModal(noteElement) {
+        activeNoteElement = noteElement;
+        originalText = noteElement.textContent;
         modalText.textContent = originalText;
         modalEditInput.value = originalText;
 
-        exitEditMode(); // Reset to view mode
+        exitEditMode();
         modalOverlay.style.display = 'block';
         feedbackModal.style.display = 'block';
     }
@@ -46,13 +101,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (wasInEditMode && isTextChanged) {
             if (confirm('You have unsaved changes. Do you want to save them?')) {
-                saveNote();
+                saveNote(); // saveNote will handle closing
+                return; 
             }
         }
         
         modalOverlay.style.display = 'none';
         feedbackModal.style.display = 'none';
-        activeNote = null;
+        activeNoteElement = null;
         originalText = '';
     }
 
@@ -71,32 +127,44 @@ document.addEventListener('DOMContentLoaded', () => {
         modalSaveBtn.classList.add('hidden');
     }
 
-    function saveNote() {
+    async function saveNote() {
         const newText = modalEditInput.value.trim();
-        if (newText) {
-            activeNote.textContent = newText;
-            originalText = newText; // Update original text to prevent re-prompting
-            modalText.textContent = newText;
-            exitEditMode();
-            closeModal();
-        } else {
+        const noteId = activeNoteElement.dataset.id;
+        if (newText && noteId) {
+            const success = await updateFeedbackNote(noteId, newText);
+            if(success) {
+                activeNoteElement.textContent = newText;
+                originalText = newText;
+                modalText.textContent = newText;
+                exitEditMode();
+                closeModal();
+            } else {
+                alert("Failed to save the note. Please try again.");
+            }
+        } else if (!newText) {
             alert("Note cannot be empty.");
         }
     }
 
 
-    function deleteNote() {
+    async function deleteNote() {
+        const noteId = activeNoteElement.dataset.id;
         if (confirm('Are you sure you want to delete this note?')) {
-            activeNote.remove();
-            closeModal();
+            const success = await deleteFeedbackNote(noteId);
+            if(success) {
+                activeNoteElement.remove();
+                closeModal();
+            } else {
+                alert("Failed to delete the note. Please try again.");
+            }
         }
     }
 
+    // --- Event Listeners ---
     addFeedbackBtn.addEventListener('click', () => {
         const feedbackText = feedbackInput.value.trim();
         if (feedbackText !== '') {
-            createFeedbackNote(feedbackText);
-
+            addFeedbackNote(feedbackText);
             feedbackInput.value = '';
             feedbackInput.focus();
         }
@@ -108,10 +176,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Modal event listeners
     modalCloseBtn.addEventListener('click', closeModal);
     modalEditBtn.addEventListener('click', enterEditMode);
     modalSaveBtn.addEventListener('click', saveNote);
     modalDeleteBtn.addEventListener('click', deleteNote);
     modalOverlay.addEventListener('click', closeModal);
+
+    // Initial Load
+    getFeedbackNotes();
 }); 
